@@ -4,17 +4,15 @@ import moment from 'moment';
 import  styles  from './styles';
 
 
-const LabelAndTimeContainer = ({ label, displayTime, showSpinner }) => {
+const LabelAndTimeContainer = ({ label, displayTime, }) => {
     return (
       <View style={styles.labelTimeContainer}>
           <Text style={styles.labelText}>
            {label}
           </Text>
-          <TouchableOpacity onPress={showSpinner}>
               <Text style={styles.timeText}> 
                   {displayTime}
               </Text>
-          </TouchableOpacity>   
       </View>
     );
 };

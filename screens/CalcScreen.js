@@ -1,20 +1,92 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Picker } from 'react-native';
+import { connect } from 'react-redux';
 import Container from '../components/Container';
-import {Button, ButtonGroup } from 'react-native-elements';
+import { Button, ButtonGroup } from 'react-native-elements';
 import LabelAndTimeContainer from '../components/LabelAndPickContainer/LabelAndTimeContainer';
 import DateTimePicker from 'react-native-modal-datetime-picker';
 import LabelAndPicker from '../components/LabelAndPickContainer/LabelAndPicker';
+import { breakStartTime, landingTime, intervalSelection, lastServiceSelection, calculateBreaks } from '../actions/timeCalcActions';
+import store from '../config/store';
+import moment from 'moment';
 
+ 
 
 const START_TIME_LABEL = 'Breaks Start Time:';
 const LAND_TIME_LABEL = 'Landing Time:';
 const LAST_SERVICE_LABEL = 'Time for Last Service:';
-const BREAK_NUM_LABEL = 'Number of Breaks:';
-let startTime = '0 : 00'; 
-let landTime = '0 : 00';
 
-export default class CalcScreen extends React.Component {
+const getStartTime = () => {
+  let currentState = store.getState();
+  return currentState.calctimes.startTime;
+}
+
+const getLandTime = () => {
+  let currentState = store.getState();
+  return currentState.calctimes.landTime;
+}
+const getFollowOn = () => {
+  let currentState = store.getState();
+  if (currentState.calctimes.lastServiceTimeSelect === 0 || currentState.calctimes.lastServiceTimeSelect === '0') {
+    return 75;
+  } else if (currentState.calctimes.lastServiceTimeSelect === 1 || currentState.calctimes.lastServiceTimeSelect === '1' ) {
+    return 90;
+  } else if (currentState.calctimes.lastServiceTimeSelect === 2 || currentState.calctimes.lastServiceTimeSelect === '2') {
+    return 105;
+  } else {
+    console.log("something went wrong with the lastservicetime");
+  }
+}
+
+const getInterval = () => {
+  let currentState = store.getState();
+  if (currentState.calctimes.selectedIndex === '0' || currentState.calctimes.selectedIndex === 0){
+    return 0;
+  } else if (currentState.calctimes.selectedIndex === '1' || currentState.calctimes.selectedIndex === 1) {
+    return 5;
+  } else if (currentState.calctimes.selectedIndex === '2' || currentState.calctimes.selectedIndex === 2) {
+    return 10;
+  } else {
+    console.log('something is wrong with the intervals')
+  }
+}
+
+const timeDiff = (landTime, startTime) => {
+  let totalMinutes = landTime.diff(startTime, 'minutes');
+   if (totalMinutes < 0) {
+     return totalMinutes + 1440;
+   } else {
+     return totalMinutes;
+   }
+}
+const getBreakTime = (timeDifference, interval, lastServe) => {
+  return (timeDifference - (interval*3) - lastServe)/3;
+} 
+
+const buildBreakPoint = (lastTimeBuilt, minutesPerBreak) => {
+  let timeToBuild = moment(lastTimeBuilt, ('HH:mm'));
+  timeToBuild = timeToBuild.clone().add(minutesPerBreak, 'minutes');
+  timeToBuild = timeToBuild.format('HH:mm');
+  return timeToBuild;
+}
+
+
+const addIntervalToEnd = (intervalMinutes, breakEndTime) => {
+ let nextBreakStart = moment(breakEndTime.toString(), 'HH:mm'); 
+ nextBreakStart = nextBreakStart.clone().add(intervalMinutes, 'minutes');
+ nextBreakStart = nextBreakStart.format('HH:mm');
+ return nextBreakStart;
+}
+
+const produceTimePerBreakText = (minutesPerBreak) => {
+  let hours = Math.floor(minutesPerBreak/60);
+  let minutes = (minutesPerBreak - (hours * 60)).toFixed();
+  
+  return 'Time Per Break: ' + hours + ' hours ' + minutes + ' minutes';
+}
+
+
+class CalcScreen extends React.Component {
   static navigationOptions = {
     title: 'Calculate Breaks',
   };
@@ -22,22 +94,17 @@ export default class CalcScreen extends React.Component {
   constructor () {
     super()
     this.state = {
-      selectedIndex: 2
-    }
-    this.updateIndex = this.updateIndex.bind(this)
-  }
-
+      selectedIndex: 1,
+      lastServeTimeSelect: '1',
+      isStartTimePickerVisible: false,
+      isLandTimePickerVisible: false,
+    };
+    this.updateIndex = this.updateIndex.bind(this);
+  };
   updateIndex (selectedIndex) {
     this.setState({selectedIndex})
+    this.props.dispatch(intervalSelection(selectedIndex));
   }
-
-
-  state = {
-    isLandTimePickerVisible: false,
-    isStartTimePickerVisible: false,
-    breakNumber: '3',
-  };
-
  
 
   _showStartTimePicker = () => this.setState({ isStartTimePickerVisible: true });
@@ -49,14 +116,43 @@ export default class CalcScreen extends React.Component {
   _hideLandTimePicker = () => this.setState({ isLandTimePickerVisible: false });
 
   _handleStartTimePicked = (date) => {
-   console.log("yup, thats a " + date)
+    this.props.dispatch(breakStartTime(date));
     this._hideStartTimePicker();
   };
 
   _handleLandTimePicked = (date) => {
-    console.log(date)
+    this.props.dispatch(landingTime(date))
     this._hideLandTimePicker();
-  }
+  };
+
+  _handleLastServiceChange = lastServeTimeSelect => {
+    this.setState({ lastServeTimeSelect });
+    this.props.dispatch(lastServiceSelection(lastServeTimeSelect));
+  };
+
+
+
+  _calculateToDisplay = (state, twoBreakStart, threeBreakStart, oneBreakEnd, twoBreakEnd, threeBreakEnd, timePerBreak, followOnStart) => {
+    let startTime = moment(getStartTime(), 'HH:mm');
+    let landTime = moment(getLandTime(), 'HH:mm');
+    let followOnMinutes = getFollowOn();
+    let intervalMinutes = getInterval();
+    totalMinutes = timeDiff(landTime, startTime);
+    if (totalMinutes >= 0 && totalMinutes < 70) {
+      return displayErrorMsg = true;
+    } else {
+    let minutesPerBreak = getBreakTime(totalMinutes, intervalMinutes, followOnMinutes);
+    oneBreakEnd = buildBreakPoint(startTime, minutesPerBreak);
+    twoBreakStart = addIntervalToEnd(intervalMinutes, oneBreakEnd);
+    twoBreakEnd = buildBreakPoint(twoBreakStart, minutesPerBreak);
+    threeBreakStart = addIntervalToEnd(intervalMinutes, twoBreakEnd);
+    threeBreakEnd = buildBreakPoint(threeBreakStart, minutesPerBreak);
+    followOnStart = addIntervalToEnd(intervalMinutes, threeBreakEnd);
+    timePerBreak = produceTimePerBreakText(minutesPerBreak);
+    this.props.navigation.navigate('Display');
+    this.props.dispatch(calculateBreaks(twoBreakStart, threeBreakStart, twoBreakEnd, oneBreakEnd, threeBreakEnd, timePerBreak, followOnStart));
+    }
+  };
 
 
   render() {
@@ -64,12 +160,12 @@ export default class CalcScreen extends React.Component {
     const { selectedIndex } = this.state
     return (
       <Container>
-
+       <TouchableOpacity onPress={this._showStartTimePicker} >
         <LabelAndTimeContainer
         label={START_TIME_LABEL}
-        displayTime={startTime}
-        showSpinner={this._showStartTimePicker}
+        displayTime={this.props.startTime}
         />
+       </TouchableOpacity>
 
          <DateTimePicker
           isVisible={this.state.isStartTimePickerVisible}
@@ -78,13 +174,14 @@ export default class CalcScreen extends React.Component {
           mode='time'
           datePickerModeAndroid='spinner'
           is24Hour={true}
-        />
-        
-        <LabelAndTimeContainer
+        ></DateTimePicker>
+
+        <TouchableOpacity onPress={this._showLandTimePicker} >
+         <LabelAndTimeContainer
         label={LAND_TIME_LABEL}
-        displayTime={landTime}
-        showSpinner={this._showLandTimePicker} 
+        displayTime={this.props.landTime}
         />
+        </TouchableOpacity>
 
         <DateTimePicker
           isVisible={this.state.isLandTimePickerVisible}
@@ -93,31 +190,22 @@ export default class CalcScreen extends React.Component {
           mode='time'
           datePickerModeAndroid='spinner'
           is24Hour={true}
-        />
+        ></DateTimePicker>
+       
         <LabelAndPicker label={LAST_SERVICE_LABEL}>
         <Picker
-            selectedValue={this.state.breakNumber}
-            onValueChange={breakNumber => this.setState({ breakNumber })}
+            selectedValue={this.state.lastServeTimeSelect}
+            onValueChange={this._handleLastServiceChange}
             style={{ width: 180,}}
             mode="dropdown">
-            <Picker.Item textAlign='center' label="1 Hour 30 minutes" value="replace with moment value" />
-            <Picker.Item label="2 Hours" value="replace with moment value" />
+            <Picker.Item textAlign='center' label="1hr 15min" value="0" />
+            <Picker.Item label="1 hr 30min" value="1" />
+            <Picker.Item label="1 hr 45min" value="2" />
           </Picker>           
         </LabelAndPicker>  
 
 
-        <LabelAndPicker label={BREAK_NUM_LABEL}>
-          <Picker
-            selectedValue={this.state.breakNumber}
-            onValueChange={breakNumber => this.setState({ breakNumber })}
-            style={{ width: 50,}}
-            mode="dropdown">
-            <Picker.Item label="3" value="3" />
-            <Picker.Item label="2" value="2" />
-          </Picker> 
-        </LabelAndPicker>
-
-        <Text style={{fontSize: 20, marginTop: 10, marginBottom: 5}}>Interval Between Break</Text>
+        <Text style={styles.buttonGroupText}>Interval Between Break</Text>
 
         <ButtonGroup
       onPress={this.updateIndex}
@@ -133,10 +221,34 @@ export default class CalcScreen extends React.Component {
         raised
         title='Calculate'
         backgroundColor='#1767ef'
-        containerViewStyle= {{marginTop: 30, width: 250}}
+        containerViewStyle= {styles.buttonStyle}
+        onPress={this._calculateToDisplay}
       />
-
       </Container>
     );
+  }
+}
+
+const mapStateToProps = (state) => {
+  const startTime = state.calctimes.startTime;
+  const landTime = state.calctimes.landTime;
+  return {
+    startTime,
+    landTime,
+  };
+};
+
+
+export default connect(mapStateToProps)(CalcScreen);
+
+const styles = {
+  buttonGroupText: {
+    fontSize: 24,
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  buttonStyle: {
+    marginTop: 10,
+    width: 280
   }
 }

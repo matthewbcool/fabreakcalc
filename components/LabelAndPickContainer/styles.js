@@ -1,27 +1,33 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
 
-
+let deviceWidth = Dimensions.get('window').width;
 
 const styles = {
     labelTimeContainer: { 
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      width: 370,
-      marginTop: 30,
+      width: deviceWidth,
+      height: 70,
+      paddingRight: 30,
+      paddingLeft: 30,
+      marginTop: 15,
       marginBottom: 10,
     },
     labelPickContainer: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      height: 100,
-      width: 370,
-      marginTop: 15,
+      paddingRight: 30,
+      paddingLeft: 30,
+      width: deviceWidth,
+      height: 70,
+      marginTop: 10,
+      marginBottom: 10,
+
     },
     labelText: {
-        fontSize: 25,
-        marginBottom: 10,
+        fontSize: 24,
         fontWeight: '400', 
     },
     timeText: {

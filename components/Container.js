@@ -1,5 +1,7 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, Dimensions } from 'react-native';
+
+let deviceHeight = Dimensions.get('window').height;
 
 const Container = ({children}) => {
     return (
@@ -22,7 +24,9 @@ const styles = {
       shadowOpacity: 0.1,
       shadowRadius: 2,
       elevation: 1,
-      backgroundColor: '#fff'
+      backgroundColor: '#fff',
+      paddingTop: 10,
+      height: deviceHeight,
     },
 };
 

@@ -1,11 +1,13 @@
 {
   "expo": {
-    "name": "AABreakCalc",
-    "description": "A very interesting project.",
-    "slug": "aabreakcalc",
-    "privacy": "public",
+    "name": "FABreakCalc",
+    "description": "productivity tool for flight attendants by Matt Cool",
+    "slug": "fabreakcalc",
+    "privacy": "unlisted",
     "sdkVersion": "25.0.0",
-    "platforms": ["ios", "android"],
+    "platforms": [ 
+      "android"
+    ],
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -15,7 +17,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
+      "bundleIdentifier": "com.cooldevlabs.fabreakcalc",
       "supportsTablet": true
+    },
+     "android": {
+      "package": "com.cooldevlabs.fabreakcalc"
     }
   }
 }

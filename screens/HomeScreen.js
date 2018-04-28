@@ -26,8 +26,9 @@ export default class HomeScreen extends React.Component {
         <LogoContainer> 
           <Image
             source={require('../assets/images/temp.png')}
+            style={{height: 150, width: 150}}
           />
-          <Text style={styles.textStyle}>Break Calc</Text>
+
           
         </LogoContainer>
 
@@ -51,10 +52,7 @@ export default class HomeScreen extends React.Component {
           title='Display Breaks    ' 
           />
         </ButtonContainer>
-        <View style={styles.LinksContentStyle}>
-          <Text>About</Text>
-          <Text>Feedback</Text>
-        </View>
+
  
 
       </Container>
@@ -71,6 +69,6 @@ const styles = {
     justifyContent: 'space-between',
     flexDirection: 'row',
     width: 225,
-    marginTop: 20,
+    marginTop: 10,
   },
 }
