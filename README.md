@@ -1,17 +1,17 @@
-#fabreakcalc
+# fabreakcalc
 
 
 
-##Installation
+## Installation
 
 
-###To open with expo client: 
+### To open with expo client: 
 
 https://docs.expo.io/versions/v27.0.0/introduction/installation
 
 
 
-###Use command line tool: exp
+### Use command line tool: exp
 
 `exp start`
 
